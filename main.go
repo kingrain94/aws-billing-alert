@@ -94,6 +94,9 @@ func HandleRequest(ctx context.Context, name Event) (string, error) {
 	}
 	var data = []byte(fmt.Sprintf(`{"type": "mrkdwn", "text":"%+v"}`, textMsg))
 	request, err := http.NewRequest("POST", Env.Webhook, bytes.NewBuffer(data))
+	if err != nil {
+		log.Fatal(err)
+	}
 	request.Header.Set("Content-Type", "application/json")
 
 	httpClient := &http.Client{}
