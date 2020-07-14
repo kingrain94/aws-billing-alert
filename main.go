@@ -20,13 +20,13 @@ import (
 
 // environment variable name
 const (
-	AccountID string = "ACCOUNT_ID"
-	Webhook   string = "WEBHOOK"
+	AccountID  string = "ACCOUNT_ID"
+	Webhook    string = "WEBHOOK"
+	BucketName string = "S3_BUCKET"
 )
 
 // constants
 const (
-	BucketName     string = "kingraint94-billing-reports"
 	YYMMTimeFormat string = "2006-01"
 
 	// csv format
@@ -37,8 +37,9 @@ const (
 
 // Env is struct hold environment variable
 var Env struct {
-	AccountID string
-	Webhook   string
+	AccountID  string
+	Webhook    string
+	BucketName string
 }
 
 // Event present for event
@@ -49,6 +50,7 @@ type Event struct {
 func init() {
 	Env.AccountID = os.Getenv(AccountID)
 	Env.Webhook = os.Getenv(Webhook)
+	Env.BucketName = os.Getenv(BucketName)
 }
 
 // HandleRequest handle request received by lambda
@@ -57,9 +59,9 @@ func HandleRequest(ctx context.Context, name Event) (string, error) {
 	mySession := session.Must(session.NewSession())
 	svc := s3.New(mySession, aws.NewConfig().WithRegion("us-east-2"))
 
-	s3Key := fmt.Sprintf("%s-aws-billing-csv-%s.csv", Env.AccountID, time.Now().Format(YYMMTimeFormat))
+	s3Key := fmt.Sprintf("%s-aws-billing-csv-%s.csv", Env.AccountID, time.Now().AddDate(0, -1, 0).Format(YYMMTimeFormat))
 	params := &s3.GetObjectInput{
-		Bucket: aws.String(BucketName),
+		Bucket: aws.String(Env.BucketName),
 		Key:    aws.String(s3Key),
 	}
 	log.Println(fmt.Sprintf("Start get billing info from s3 file %s", s3Key))
@@ -78,7 +80,7 @@ func HandleRequest(ctx context.Context, name Event) (string, error) {
 	}
 
 	// send billing info by webhook
-	textMsg := fmt.Sprintf("%s Billing Report", time.Now().Format(YYMMTimeFormat))
+	textMsg := fmt.Sprintf("%s Billing Report", time.Now().AddDate(0, -1, 0).Format(YYMMTimeFormat))
 	for k, v := range records {
 		if len(v[ServiceColumnID]) == 0 {
 			textMsg = fmt.Sprintf("%s\nSum:\t%s\t%s", textMsg, v[TotalColumnID], v[CurrencyColumnID])
